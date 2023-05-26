@@ -10,13 +10,15 @@
 
 #define FORWARD 1
 #define BACKWARD 2
+#define BRAKE 3
 #define RELEASE 4
 
 class MotorShield {
     public:
         MotorShield( uint8_t devAddress = 0x60 );
         void begin();
-        void writePWM( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 );
+        void writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime );
+        void writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 );
         void writeDigital( uint8_t pin , uint8_t val );
         void setMotorPWM( uint8_t motorNumber , uint16_t val );
         void setMotorDirection( uint8_t motorNumber , uint8_t direction );
