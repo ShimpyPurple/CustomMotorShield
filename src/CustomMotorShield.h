@@ -21,6 +21,7 @@ class MotorShield {
         void writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 );
         void writeDigital( uint8_t pin , uint8_t val );
         void setMotorPWM( uint8_t motorNumber , uint16_t val );
+        void setMotorPercent( uint8_t motorNumber , float percent );
         void setMotorDirection( uint8_t motorNumber , uint8_t direction );
         void writeServo( uint8_t pin , float percent );
         void releaseServo( uint8_t pin );

@@ -8,6 +8,7 @@ void MotorShield::begin() {
     Wire.begin();
     
     send( 0xFD , 0x10 );
+    // Set all pins to off
     
     send( 0x00 , 0x10 );
     // regAddress: 0x00 = Mode1 register
@@ -76,6 +77,12 @@ void MotorShield::setMotorPWM( uint8_t motorNumber , uint16_t val ) {
         case 3: writeAnalog(  2 , val ); break;
         case 4: writeAnalog(  7 , val ); break;
     }
+}
+
+void MotorShield::setMotorPercent( uint8_t motorNumber , float percent ) {
+    if ( percent > 100 ) percent = 100;
+    if ( percent <   0 ) percent =   0;
+    setMotorPWM( motorNumber , percent/100 * 0x1000 );
 }
 
 void MotorShield::setMotorDirection( uint8_t motorNumber , uint8_t direction ) {
