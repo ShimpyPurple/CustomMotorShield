@@ -7,8 +7,9 @@ MotorShield::MotorShield( uint8_t devAddress = 0x60 ):
 void MotorShield::begin() {
     Wire.begin();
     
-    for ( uint8_t i=0 ; i<32 ++i ) {
-        writePWMQueue[i] = 0xFFFF;
+    for ( uint8_t pin=0 ; pin<16 ; ++pin ) {
+        writePWMQueue[pin][0] = 0xFFFF;
+        writePWMQueue[pin][1] = 0xFFFF;
     }
     
     send( 0xFD , 0x10 );
