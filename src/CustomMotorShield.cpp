@@ -7,6 +7,10 @@ MotorShield::MotorShield( uint8_t devAddress = 0x60 ):
 void MotorShield::begin() {
     Wire.begin();
     
+    for ( uint8_t i=0 ; i<32 ++i ) {
+        writePWMQueue[i] = 0xFFFF;
+    }
+    
     send( 0xFD , 0x10 );
     // Set all pins to off
     
@@ -35,6 +39,12 @@ void MotorShield::begin() {
 }
 
 void MotorShield::writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime ) {
+    if ( (SREG>>SREG_I & 1) == 0 ) {
+        writePWMQueue[pin][0] = startTime;
+        writePWMQueue[pin][1] = stopTime;
+        return;
+    }
+    
     uint16_t toSend[] = { startTime , stopTime };
     
     send16( 4*pin+0x06 , toSend , 2 );
@@ -48,6 +58,16 @@ void MotorShield::writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime
     //     in the 0x0FFF (12 bit) counting cycle at which pin n turns off.
     //   If the 12th bit ( n_OFF_H[4] ) is set, the pin will be always off.
     //   Always off takes precedence over always on.
+}
+
+void MotorShield::resolveQueue() {
+    for ( uint8_t pin=0 ; pin<16 ; ++pin ) {
+        if ( writePWMQueue[pin][0] != 0xFFFF ) {
+            writePWM( pin , writePWMQueue[pin][0] , writePWMQueue[pin][1] );
+            writePWMQueue[pin][0] = 0xFFFF;
+            writePWMQueue[pin][1] = 0xFFFF;
+        }
+    }
 }
 
 void MotorShield::writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 ) {
