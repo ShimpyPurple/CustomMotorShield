@@ -23,6 +23,7 @@ class MotorShield {
         void setMotorPWM( uint8_t motorNumber , uint16_t val );
         void setMotorPercent( uint8_t motorNumber , float percent );
         void setMotorDirection( uint8_t motorNumber , uint8_t direction );
+        void writeServo32( uint8_t pin , uint8_t index );
         void writeServo( uint8_t pin , float percent );
         void releaseServo( uint8_t pin );
     

@@ -103,17 +103,20 @@ void MotorShield::setMotorDirection( uint8_t motorNumber , uint8_t direction ) {
     }
 }
 
+void MotorShield::writeServo32( uint8_t pin , uint8_t index ) {
+    writeAnalog( pin , index * 16 + 128 + 8 );
+    // Basic servos have 33 positions from 0 to 32 (inclusive).
+    // Position 0 is at 516us, increasing by 64.5us up to 2580us.
+    // Counting to 4096 at 60Hz*overflow, this works out to
+    // 16 ticks per position, stating at 128, and going up to 640.
+    // +8 is added to be in the middle of the range.
+}
+
 void MotorShield::writeServo( uint8_t pin , float percent ) {
-    // if ( percent > 100 ) percent = 100;
-    // if ( percent <   0 ) percent = 0;
+    if ( percent > 100 ) percent = 100;
+    if ( percent <   0 ) percent = 0;
     
-    writeAnalog( pin , 122 + percent/100 * ( 613 - 122 ) );
-    // Min servo pulse: 122 = round(  500us / 16704us * 4096 ) - 1
-    // Max servo pulse: 613 = round( 2500us / 16704us * 4096 ) - 1
-    //     500us = servo min pulse time
-    //    2500us = servo max pulse time
-    //   16704us = servo refresh period (from 60Hz refresh rate)
-    //   4096 = Shield counter resolution
+    writeServo32( pin , percent/100 * 32 );
 }
 
 void MotorShield::releaseServo( uint8_t pin ) {
