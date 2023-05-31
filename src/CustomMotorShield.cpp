@@ -1,13 +1,19 @@
 #include "CustomMotorShield.h"
 
-MotorShield::MotorShield( uint8_t devAddress = 0x60 ):
+MotorShield::MotorShield( uint8_t devAddress ):
     devAddress( devAddress )
 {}
 
 void MotorShield::begin() {
     Wire.begin();
     
+    for ( uint8_t pin=0 ; pin<16 ; ++pin ) {
+        writePWMQueue[pin][0] = 0xFFFF;
+        writePWMQueue[pin][1] = 0xFFFF;
+    }
+    
     send( 0xFD , 0x10 );
+    // Set all pins to off
     
     send( 0x00 , 0x10 );
     // regAddress: 0x00 = Mode1 register
@@ -34,6 +40,12 @@ void MotorShield::begin() {
 }
 
 void MotorShield::writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime ) {
+    if ( (SREG>>SREG_I & 1) == 0 ) {
+        writePWMQueue[pin][0] = startTime;
+        writePWMQueue[pin][1] = stopTime;
+        return;
+    }
+    
     uint16_t toSend[] = { startTime , stopTime };
     
     send16( 4*pin+0x06 , toSend , 2 );
@@ -49,7 +61,17 @@ void MotorShield::writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime
     //   Always off takes precedence over always on.
 }
 
-void MotorShield::writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 ) {
+void MotorShield::resolveQueue() {
+    for ( uint8_t pin=0 ; pin<16 ; ++pin ) {
+        if ( writePWMQueue[pin][0] != 0xFFFF ) {
+            writePWM( pin , writePWMQueue[pin][0] , writePWMQueue[pin][1] );
+            writePWMQueue[pin][0] = 0xFFFF;
+            writePWMQueue[pin][1] = 0xFFFF;
+        }
+    }
+}
+
+void MotorShield::writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime ) {
     if ( pulseWidth >= 0x1000 ) {
         writeDigital( pin , HIGH );
         return;
@@ -78,6 +100,12 @@ void MotorShield::setMotorPWM( uint8_t motorNumber , uint16_t val ) {
     }
 }
 
+void MotorShield::setMotorPercent( uint8_t motorNumber , float percent ) {
+    if ( percent > 100 ) percent = 100;
+    if ( percent <   0 ) percent =   0;
+    setMotorPWM( motorNumber , percent/100 * 0x1000 );
+}
+
 void MotorShield::setMotorDirection( uint8_t motorNumber , uint8_t direction ) {
     uint8_t pin1;
     uint8_t pin2;
@@ -96,17 +124,20 @@ void MotorShield::setMotorDirection( uint8_t motorNumber , uint8_t direction ) {
     }
 }
 
+void MotorShield::writeServo32( uint8_t pin , uint8_t index ) {
+    writeAnalog( pin , index * 16 + 128 + 8 );
+    // Basic servos have 33 positions from 0 to 32 (inclusive).
+    // Position 0 is at 516us, increasing by 64.5us up to 2580us.
+    // Counting to 4096 at 60Hz*overflow, this works out to
+    // 16 ticks per position, stating at 128, and going up to 640.
+    // +8 is added to be in the middle of the range.
+}
+
 void MotorShield::writeServo( uint8_t pin , float percent ) {
-    // if ( percent > 100 ) percent = 100;
-    // if ( percent <   0 ) percent = 0;
+    if ( percent > 100 ) percent = 100;
+    if ( percent <   0 ) percent = 0;
     
-    writeAnalog( pin , 122 + percent/100 * ( 613 - 122 ) );
-    // Min servo pulse: 122 = round(  500us / 16704us * 4096 ) - 1
-    // Max servo pulse: 613 = round( 2500us / 16704us * 4096 ) - 1
-    //     500us = servo min pulse time
-    //    2500us = servo max pulse time
-    //   16704us = servo refresh period (from 60Hz refresh rate)
-    //   4096 = Shield counter resolution
+    writeServo32( pin , percent/100 * 32 );
 }
 
 void MotorShield::releaseServo( uint8_t pin ) {
@@ -120,7 +151,7 @@ void MotorShield::send( uint8_t regAddress , uint8_t data8 ) {
     Wire.endTransmission( true );
 }
 
-void MotorShield::send16( uint8_t regAddress , uint16_t data16 , bool msByteFirst=false ) {
+void MotorShield::send16( uint8_t regAddress , uint16_t data16 , bool msByteFirst ) {
     Wire.beginTransmission( devAddress );
     Wire.write( regAddress );
     if ( msByteFirst ) {
@@ -142,7 +173,7 @@ void MotorShield::send( uint8_t regAddress , uint8_t *data8 , size_t quantity ) 
     Wire.endTransmission();
 }
 
-void MotorShield::send16( uint8_t regAddress , uint16_t *data16 , size_t quantity , bool msByteFirst=false ) {
+void MotorShield::send16( uint8_t regAddress , uint16_t *data16 , size_t quantity , bool msByteFirst ) {
     Wire.beginTransmission( devAddress );
     Wire.write( regAddress );
     for ( size_t i=0 ; i<quantity ; ++i ) {

@@ -18,15 +18,19 @@ class MotorShield {
         MotorShield( uint8_t devAddress = 0x60 );
         void begin();
         void writePWM( uint8_t pin , uint16_t startTime , uint16_t stopTime );
+        void resolveQueue();
         void writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 );
         void writeDigital( uint8_t pin , uint8_t val );
         void setMotorPWM( uint8_t motorNumber , uint16_t val );
+        void setMotorPercent( uint8_t motorNumber , float percent );
         void setMotorDirection( uint8_t motorNumber , uint8_t direction );
+        void writeServo32( uint8_t pin , uint8_t index );
         void writeServo( uint8_t pin , float percent );
         void releaseServo( uint8_t pin );
     
     private:
         uint8_t devAddress;
+        uint16_t writePWMQueue[16][2];
         void send( uint8_t regAddress , uint8_t data8 );
         void send16( uint8_t regAddress , uint16_t data16 , bool msByteFirst=false );
         void send( uint8_t regAddress , uint8_t *data8 , size_t quantity );
