@@ -1,6 +1,6 @@
 #include "CustomMotorShield.h"
 
-MotorShield::MotorShield( uint8_t devAddress = 0x60 ):
+MotorShield::MotorShield( uint8_t devAddress ):
     devAddress( devAddress )
 {}
 
@@ -71,7 +71,7 @@ void MotorShield::resolveQueue() {
     }
 }
 
-void MotorShield::writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime=0 ) {
+void MotorShield::writeAnalog( uint8_t pin , uint16_t pulseWidth , uint16_t startTime ) {
     if ( pulseWidth >= 0x1000 ) {
         writeDigital( pin , HIGH );
         return;
@@ -151,7 +151,7 @@ void MotorShield::send( uint8_t regAddress , uint8_t data8 ) {
     Wire.endTransmission( true );
 }
 
-void MotorShield::send16( uint8_t regAddress , uint16_t data16 , bool msByteFirst=false ) {
+void MotorShield::send16( uint8_t regAddress , uint16_t data16 , bool msByteFirst ) {
     Wire.beginTransmission( devAddress );
     Wire.write( regAddress );
     if ( msByteFirst ) {
@@ -173,7 +173,7 @@ void MotorShield::send( uint8_t regAddress , uint8_t *data8 , size_t quantity ) 
     Wire.endTransmission();
 }
 
-void MotorShield::send16( uint8_t regAddress , uint16_t *data16 , size_t quantity , bool msByteFirst=false ) {
+void MotorShield::send16( uint8_t regAddress , uint16_t *data16 , size_t quantity , bool msByteFirst ) {
     Wire.beginTransmission( devAddress );
     Wire.write( regAddress );
     for ( size_t i=0 ; i<quantity ; ++i ) {
